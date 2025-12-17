@@ -125,6 +125,8 @@ const ViewUpsertJob = (props: any) => {
                     logo: cp && cp.length > 1 ? cp[1] : ""
                 },
                 location: values.location,
+                latitude: values.latitude,   // thêm
+                longitude: values.longitude, // thêm
                 salary: values.salary,
                 quantity: values.quantity,
                 level: values.level,
@@ -132,8 +134,8 @@ const ViewUpsertJob = (props: any) => {
                 startDate: /[0-9]{2}[/][0-9]{2}[/][0-9]{4}$/.test(values.startDate) ? dayjs(values.startDate, 'DD/MM/YYYY').toDate() : values.startDate,
                 endDate: /[0-9]{2}[/][0-9]{2}[/][0-9]{4}$/.test(values.endDate) ? dayjs(values.endDate, 'DD/MM/YYYY').toDate() : values.endDate,
                 active: values.active,
+            };
 
-            }
 
             const res = await callUpdateJob(job, dataUpdate.id);
             if (res.data) {
@@ -158,6 +160,8 @@ const ViewUpsertJob = (props: any) => {
                     logo: cp && cp.length > 1 ? cp[1] : ""
                 },
                 location: values.location,
+                latitude: values.latitude,   // thêm
+                longitude: values.longitude, // thêm
                 salary: values.salary,
                 quantity: values.quantity,
                 level: values.level,
@@ -165,7 +169,8 @@ const ViewUpsertJob = (props: any) => {
                 startDate: dayjs(values.startDate, 'DD/MM/YYYY').toDate(),
                 endDate: dayjs(values.endDate, 'DD/MM/YYYY').toDate(),
                 active: values.active
-            }
+            };
+
 
             const res = await callCreateJob(job);
             if (res.data) {
@@ -222,12 +227,11 @@ const ViewUpsertJob = (props: any) => {
                                 <ProFormText
                                     label="Tên Job"
                                     name="name"
-                                    rules={[
-                                        { required: true, message: 'Vui lòng không bỏ trống' },
-                                    ]}
+                                    rules={[{ required: true, message: 'Vui lòng không bỏ trống' }]}
                                     placeholder="Nhập tên job"
                                 />
                             </Col>
+
                             <Col span={24} md={6}>
                                 <ProFormSelect
                                     name="skills"
@@ -237,9 +241,7 @@ const ViewUpsertJob = (props: any) => {
                                     rules={[{ required: true, message: 'Vui lòng chọn kỹ năng!' }]}
                                     allowClear
                                     mode="multiple"
-                                    fieldProps={{
-                                        suffixIcon: null
-                                    }}
+                                    fieldProps={{ suffixIcon: null }}
                                 />
                             </Col>
 
@@ -252,6 +254,29 @@ const ViewUpsertJob = (props: any) => {
                                     rules={[{ required: true, message: 'Vui lòng chọn địa điểm!' }]}
                                 />
                             </Col>
+
+                            {/* Vĩ độ */}
+                            <Col span={24} md={6}>
+                                <ProFormDigit
+                                    label="Vĩ độ (latitude)"
+                                    name="latitude"
+                                    placeholder="Ví dụ: 10.762622"
+                                    fieldProps={{ step: 0.000001 }}
+                                    rules={[{ required: true, message: 'Vui lòng nhập vĩ độ!' }]}
+                                />
+                            </Col>
+
+                            {/* Kinh độ */}
+                            <Col span={24} md={6}>
+                                <ProFormDigit
+                                    label="Kinh độ (longitude)"
+                                    name="longitude"
+                                    placeholder="Ví dụ: 106.660172"
+                                    fieldProps={{ step: 0.000001 }}
+                                    rules={[{ required: true, message: 'Vui lòng nhập kinh độ!' }]}
+                                />
+                            </Col>
+
                             <Col span={24} md={6}>
                                 <ProFormDigit
                                     label="Mức lương"
@@ -265,6 +290,7 @@ const ViewUpsertJob = (props: any) => {
                                     }}
                                 />
                             </Col>
+
                             <Col span={24} md={6}>
                                 <ProFormDigit
                                     label="Số lượng"

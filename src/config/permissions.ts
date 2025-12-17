@@ -22,6 +22,11 @@ export const ALL_PERMISSIONS = {
         CREATE: { method: "POST", apiPath: '/api/v1/resumes', module: "RESUMES" },
         UPDATE: { method: "PUT", apiPath: '/api/v1/resumes', module: "RESUMES" },
         DELETE: { method: "DELETE", apiPath: '/api/v1/resumes/{id}', module: "RESUMES" },
+        AI_SUMMARY: {
+            method: "POST",
+            apiPath: "/api/v1/resumes/{id}/ai-summary",
+            module: "RESUMES",
+        },
     },
     ROLES: {
         GET_PAGINATE: { method: "GET", apiPath: '/api/v1/roles', module: "ROLES" },
@@ -45,5 +50,4 @@ export const ALL_MODULES = {
     RESUMES: 'RESUMES',
     ROLES: 'ROLES',
     USERS: 'USERS',
-    SUBSCRIBERS: 'SUBSCRIBERS'
 }

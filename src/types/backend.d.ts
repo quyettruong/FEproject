@@ -94,8 +94,12 @@ export interface IJob {
         id: string;
         name: string;
         logo?: string;
-    }
+    };
+
     location: string;
+    latitude?: number;
+    longitude?: number;
+
     salary: number;
     quantity: number;
     level: string;
@@ -111,32 +115,57 @@ export interface IJob {
     updatedAt?: string;
 }
 
+
 export interface IResume {
     id?: string;
     email: string;
     userId: string;
+
     url: string;
     status: string;
-    companyId: string | {
+
+    // BE trả sẵn theo job đã expand
+    job?: {
         id: string;
         name: string;
-        logo: string;
+        company?: {
+            id: string;
+            name: string;
+            logo?: string;
+        };
     };
-    jobId: string | {
+
+    // tên công ty đã map sẵn từ BE
+    companyName?: string;
+
+    // tóm tắt CV bằng AI
+    summaryAi?: string;
+
+    // giữ nguyên
+    companyId?: string | {
+        id: string;
+        name: string;
+        logo?: string;
+    };
+
+    jobId?: string | {
         id: string;
         name: string;
     };
+
     history?: {
         status: string;
         updatedAt: Date;
         updatedBy: { id: string; email: string }
-    }[]
+    }[];
+
     createdBy?: string;
     isDeleted?: boolean;
-    deletedAt?: boolean | null;
+    deletedAt?: string | null;
     createdAt?: string;
     updatedAt?: string;
 }
+
 
 export interface IPermission {
     id?: string;
@@ -167,14 +196,3 @@ export interface IRole {
     updatedAt?: string;
 }
 
-export interface ISubscribers {
-    id?: string;
-    name?: string;
-    email?: string;
-    skills: string[];
-    createdBy?: string;
-    isDeleted?: boolean;
-    deletedAt?: boolean | null;
-    createdAt?: string;
-    updatedAt?: string;
-}

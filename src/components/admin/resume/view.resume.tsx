@@ -1,104 +1,274 @@
-import { callUpdateResumeStatus } from "@/config/api";
+import React, { useEffect, useState } from "react";
+import {
+    Modal,
+    Descriptions,
+    Tag,
+    Button,
+    Typography,
+    message,
+    Select,
+} from "antd";
+import dayjs from "dayjs";
 import { IResume } from "@/types/backend";
-import { Badge, Button, Descriptions, Drawer, Form, Select, message, notification } from "antd";
-import dayjs from 'dayjs';
-import { useState, useEffect } from 'react';
-const { Option } = Select;
+import {
+    callSummarizeResume,
+    callUpdateResumeStatus,
+} from "@/config/api";
+import { ALL_PERMISSIONS } from "@/config/permissions";
+import Access from "@/components/share/access";
+
+const { Paragraph, Text } = Typography;
 
 interface IProps {
-    onClose: (v: boolean) => void;
     open: boolean;
-    dataInit: IResume | null | any;
-    setDataInit: (v: any) => void;
+    onClose: (v: boolean) => void;
+    dataInit: IResume | null;
+    setDataInit: (v: IResume | null) => void;
     reloadTable: () => void;
 }
-const ViewDetailResume = (props: IProps) => {
-    const [isSubmit, setIsSubmit] = useState<boolean>(false);
-    const { onClose, open, dataInit, setDataInit, reloadTable } = props;
-    const [form] = Form.useForm();
 
-    const handleChangeStatus = async () => {
-        setIsSubmit(true);
+const statusColor: Record<string, string> = {
+    PENDING: "default",
+    REVIEWING: "processing",
+    APPROVED: "success",
+    REJECTED: "error",
+};
 
-        const status = form.getFieldValue('status');
-        const res = await callUpdateResumeStatus(dataInit?.id, status)
-        if (res.data) {
-            message.success("Update Resume status thành công!");
-            setDataInit(null);
-            onClose(false);
-            reloadTable();
-        } else {
-            notification.error({
-                message: 'Có lỗi xảy ra',
-                description: res.message
-            });
-        }
+const ViewDetailResume: React.FC<IProps> = (props) => {
+    const { open, onClose, dataInit, reloadTable, setDataInit } = props;
 
-        setIsSubmit(false);
-    }
+    const [loading, setLoading] = useState(false);
+    const [currentStatus, setCurrentStatus] = useState<string | undefined>(
+        dataInit?.status,
+    );
 
+    // mỗi lần mở 1 CV khác thì sync lại trạng thái
     useEffect(() => {
-        if (dataInit) {
-            form.setFieldValue("status", dataInit.status)
+        setCurrentStatus(dataInit?.status);
+    }, [dataInit]);
+
+    // ====== TỰ ĐỘNG TÓM TẮT CV KHI MỞ MODAL ======
+    useEffect(() => {
+        if (
+            open &&
+            dataInit?.id &&
+            !dataInit.summaryAi &&
+            !loading
+        ) {
+            handleSummarize();
         }
-        return () => form.resetFields();
-    }, [dataInit])
+    }, [open, dataInit?.id]);
+
+
+    const handleClose = () => {
+        onClose(false);
+    };
+
+    // ====== GỌI AI TÓM TẮT CV ======
+    const handleSummarize = async () => {
+        if (!dataInit?.id) {
+            message.error("Resume không hợp lệ");
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // res = { statusCode, message, data: { resumeId, summaryAi } }
+            const res = await callSummarizeResume(dataInit.id);
+
+            if (res?.statusCode === 200) {
+                message.success("Tóm tắt CV thành công");
+
+                // cập nhật ngay nội dung đang mở modal (không cần đóng/mở lại)
+                props.setDataInit({
+                    ...dataInit,
+                    summaryAi: res?.data?.summaryAi,
+                });
+
+                reloadTable();
+            } else {
+                message.error(res?.message || "Không thể tóm tắt CV");
+            }
+        } catch (e) {
+            message.error("Lỗi khi tóm tắt CV");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    const handleUpdateStatus = async () => {
+        if (!dataInit?.id) {
+            message.error("Resume không hợp lệ");
+            return;
+        }
+
+        if (!currentStatus) {
+            message.error("Vui lòng chọn trạng thái");
+            return;
+        }
+
+        if (currentStatus === dataInit.status) {
+            handleClose();
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // gửi body { id, status } đúng với BE
+            const res = await callUpdateResumeStatus({
+                id: dataInit.id,
+                status: currentStatus,
+            });
+
+            // res = { statusCode, message, data }
+            if (res?.statusCode === 200) {
+                message.success(res.message || "Cập nhật trạng thái thành công");
+                reloadTable();
+                onClose(false);
+            } else {
+                message.error(res?.message || "Không thể cập nhật trạng thái");
+            }
+        } catch (e) {
+            message.error("Không thể cập nhật trạng thái");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
 
     return (
-        <>
-            <Drawer
-                title="Thông Tin Resume"
-                placement="right"
-                onClose={() => { onClose(false); setDataInit(null) }}
-                open={open}
-                width={"40vw"}
-                maskClosable={false}
-                destroyOnClose
-                extra={
-
-                    <Button loading={isSubmit} type="primary" onClick={handleChangeStatus}>
-                        Change Status
+        <Modal
+            open={open}
+            title={
+                dataInit ? `Thông tin Resume #${dataInit.id}` : "Thông tin Resume"
+            }
+            onCancel={handleClose}
+            footer={[
+                // nút AI summary: chỉ ẩn nút khi không đủ quyền, KHÔNG render 403
+                <Access
+                    key="ai"
+                    permission={ALL_PERMISSIONS.RESUMES.AI_SUMMARY}
+                    hideChildren
+                >
+                    <Button
+                        type="primary"
+                        loading={loading}
+                        onClick={handleSummarize}
+                    >
+                        Tóm tắt CV bằng AI
                     </Button>
+                </Access>,
 
-                }
-            >
-                <Descriptions title="" bordered column={2} layout="vertical">
-                    <Descriptions.Item label="Email">{dataInit?.email}</Descriptions.Item>
+                // nút Lưu trạng thái: cũng chỉ ẩn nút
+                <Access
+                    key="update"
+                    permission={ALL_PERMISSIONS.RESUMES.UPDATE}
+                    hideChildren
+                >
+                    <Button
+                        type="primary"
+                        ghost
+                        loading={loading}
+                        onClick={handleUpdateStatus}
+                    >
+                        Lưu trạng thái
+                    </Button>
+                </Access>,
+
+                <Button key="close" onClick={handleClose}>
+                    Đóng
+                </Button>,
+            ]}
+            destroyOnClose
+            width={900}
+        >
+            {dataInit && (
+                <Descriptions column={2} bordered>
+                    <Descriptions.Item label="Id">
+                        {dataInit.id}
+                    </Descriptions.Item>
+
                     <Descriptions.Item label="Trạng thái">
-                        <Form
-                            form={form}
-                        >
-                            <Form.Item name={"status"}>
-                                <Select
-                                    // placeholder="Select a option and change input text above"
-                                    // onChange={onGenderChange}
-                                    // allowClear
-                                    style={{ width: "100%" }}
-                                    defaultValue={dataInit?.status}
-                                >
-                                    <Option value="PENDING">PENDING</Option>
-                                    <Option value="REVIEWING">REVIEWING</Option>
-                                    <Option value="APPROVED">APPROVED</Option>
-                                    <Option value="REJECTED">REJECTED</Option>
-                                </Select>
-                            </Form.Item>
-                        </Form>
-
+                        <Select
+                            style={{ minWidth: 160 }}
+                            value={currentStatus}
+                            onChange={setCurrentStatus}
+                            options={[
+                                { value: "PENDING", label: "PENDING" },
+                                { value: "REVIEWING", label: "REVIEWING" },
+                                { value: "APPROVED", label: "APPROVED" },
+                                { value: "REJECTED", label: "REJECTED" },
+                            ]}
+                        />
+                        {currentStatus && (
+                            <Tag
+                                color={statusColor[currentStatus]}
+                                style={{ marginLeft: 8 }}
+                            >
+                                {currentStatus}
+                            </Tag>
+                        )}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Tên Job">
-                        {dataInit?.job?.name}
 
+                    <Descriptions.Item label="Email">
+                        {dataInit.email}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Tên Công Ty">
-                        {dataInit?.companyName}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Ngày tạo">{dataInit && dataInit.createdAt ? dayjs(dataInit.createdAt).format('DD-MM-YYYY HH:mm:ss') : ""}</Descriptions.Item>
-                    <Descriptions.Item label="Ngày sửa">{dataInit && dataInit.updatedAt ? dayjs(dataInit.updatedAt).format('DD-MM-YYYY HH:mm:ss') : ""}</Descriptions.Item>
 
+                    <Descriptions.Item label="File CV">
+                        {dataInit.url}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Job">
+                        {dataInit.job?.name}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Company">
+                        {dataInit.companyName || dataInit.job?.company?.name}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Ngày tạo">
+                        {dataInit.createdAt
+                            ? dayjs(dataInit.createdAt).format(
+                                "DD-MM-YYYY HH:mm:ss",
+                            )
+                            : ""}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Ngày sửa">
+                        {dataInit.updatedAt
+                            ? dayjs(dataInit.updatedAt).format(
+                                "DD-MM-YYYY HH:mm:ss",
+                            )
+                            : ""}
+                    </Descriptions.Item>
+
+                    {/* TÓM TẮT CV BẰNG AI */}
+                    <Descriptions.Item label="Tóm tắt CV (AI)" span={2}>
+                        {dataInit.summaryAi ? (
+                            <Paragraph
+                                style={{
+                                    whiteSpace: "pre-line",
+                                    marginBottom: 0,
+                                }}
+                            >
+                                {dataInit.summaryAi}
+                            </Paragraph>
+                        ) : (
+                            <Text type="secondary">
+                                Chưa có tóm tắt. Bấm nút "Tóm tắt CV bằng AI" để
+                                tạo.
+                            </Text>
+                        )}
+                    </Descriptions.Item>
                 </Descriptions>
-            </Drawer>
-        </>
-    )
-}
+            )}
+        </Modal>
+    );
+};
 
 export default ViewDetailResume;

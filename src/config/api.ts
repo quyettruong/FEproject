@@ -1,9 +1,9 @@
-import { IBackendRes, ICompany, IAccount, IUser, IModelPaginate, IGetAccount, IJob, IResume, IPermission, IRole, ISkill, ISubscribers } from '@/types/backend';
+import { IBackendRes, ICompany, IAccount, IUser, IModelPaginate, IGetAccount, IJob, IResume, IPermission, IRole, ISkill } from '@/types/backend';
 import axios from 'config/axios-customize';
 import axiosOrigin from "axios";
 
 /**
- * 
+ *
 Module Auth
  */
 
@@ -181,17 +181,23 @@ export const callCreateResume = (url: string, jobId: any, email: string, userId:
     })
 }
 
-export const callUpdateResumeStatus = (id: any, status: string) => {
-    return axios.put<IBackendRes<IResume>>(`/api/v1/resumes`, { id, status })
-}
+
+// cập nhật trạng thái resume
+export const callUpdateResumeStatus = (body: { id: number | string; status: string }) => {
+    return axios.put("/api/v1/resumes", body);
+};
+
+
 
 export const callDeleteResume = (id: string) => {
     return axios.delete<IBackendRes<IResume>>(`/api/v1/resumes/${id}`);
 }
 
+
 export const callFetchResume = (query: string) => {
     return axios.get<IBackendRes<IModelPaginate<IResume>>>(`/api/v1/resumes?${query}`);
-}
+};
+
 
 export const callFetchResumeById = (id: string) => {
     return axios.get<IBackendRes<IResume>>(`/api/v1/resumes/${id}`);
@@ -200,6 +206,11 @@ export const callFetchResumeById = (id: string) => {
 export const callFetchResumeByUser = () => {
     return axios.get<IBackendRes<IModelPaginate<IResume>>>(`/api/v1/resumes/by-user`);
 }
+
+export const callSummarizeResume = (id: number | string) => {
+    return axios.post<IBackendRes<any>>(`/api/v1/resumes/${id}/ai-summary`);
+};
+
 
 /**
  * 
@@ -247,33 +258,5 @@ export const callFetchRole = (query: string) => {
 
 export const callFetchRoleById = (id: string) => {
     return axios.get<IBackendRes<IRole>>(`/api/v1/roles/${id}`);
-}
-
-/**
- * 
-Module Subscribers
- */
-export const callCreateSubscriber = (subs: ISubscribers) => {
-    return axios.post<IBackendRes<ISubscribers>>('/api/v1/subscribers', { ...subs })
-}
-
-export const callGetSubscriberSkills = () => {
-    return axios.post<IBackendRes<ISubscribers>>('/api/v1/subscribers/skills')
-}
-
-export const callUpdateSubscriber = (subs: ISubscribers) => {
-    return axios.put<IBackendRes<ISubscribers>>(`/api/v1/subscribers`, { ...subs })
-}
-
-export const callDeleteSubscriber = (id: string) => {
-    return axios.delete<IBackendRes<ISubscribers>>(`/api/v1/subscribers/${id}`);
-}
-
-export const callFetchSubscriber = (query: string) => {
-    return axios.get<IBackendRes<IModelPaginate<ISubscribers>>>(`/api/v1/subscribers?${query}`);
-}
-
-export const callFetchSubscriberById = (id: string) => {
-    return axios.get<IBackendRes<ISubscribers>>(`/api/v1/subscribers/${id}`);
 }
 
